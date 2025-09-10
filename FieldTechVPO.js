@@ -13,6 +13,14 @@ let currentRecordId = null;
 let techniciansWithRecords = new Set();
 let branchesWithRecords = new Set();
 let totalRecords = 0;
+let nextOffset = '';  // Airtable pagination cursor for "Load more"
+let lastFilterFormula = ''; // remember current filter for the next page
+let LOG_FETCH = true; // flip to false to silence logs in prod
+let AUTO_LOAD_ALL_PAGES = true; // fetch all pages on initial load
+
+function logFetch(...args) {
+  if (LOG_FETCH) console.log(...args);
+}
 
 // Rendering control
 const RENDER_BATCH_SIZE = 150;   // slightly smaller for smoother mobile paint
@@ -49,6 +57,31 @@ axios.defaults.headers.common['Authorization'] = `Bearer ${airtableApiKey}`;
 // ==============================
 //  UTILITIES
 // ==============================
+async function fetchPageWithOffset(filterByFormula, offsetCursor = '') {
+  const params = {
+    filterByFormula,
+    view: airtableViewId,
+    pageSize: 100,
+    fields: fieldsToFetch,
+    offset: offsetCursor
+  };
+
+  const t0 = performance.now();
+  const res = await axios.get(airtableEndpoint, { params, signal: makeSignal() });
+  const dt = Math.round(performance.now() - t0);
+
+  const rawRecords = res.data.records || [];
+  const page = rawRecords
+    .filter(r => !r.fields['Field Tech Confirmed Job Complete'])
+    .map(r => ({ id: r.id, fields: r.fields, descriptionOfWork: r.fields['Description of Work'] || '' }));
+
+  const next = res.data.offset || '';
+  logFetch(`[VPO] Page fetched: +${page.length} jobs in ${dt}ms (offset in="${offsetCursor || '∅'}" -> out="${next || '∅'}")`);
+
+  return { page, offset: next };
+}
+
+
 function showLoadingOverlay() {
   const el = document.getElementById('loadingOverlay');
   if (el) {
@@ -320,20 +353,22 @@ function makeSignal() {
 async function fetchRecordsFiltered(fieldTech = 'all', branch = 'all') {
   showLoadingOverlay();
   isFetching = true;
-  // Reset UI
+
+  // Reset state
   records = [];
   fetchedRecords = 0;
   totalIncompleteRecords = 0;
-  offset = '';
-  scheduleRenderChunk(true); // clear and rebuild
+  nextOffset = '';
+  scheduleRenderChunk(true); // clear & rebuild
 
-  // Build cache key and try cached data first
+  // Cache lookup
   const cacheKey = `${fieldTech}|${branch}`;
   const cached = cacheGet(cacheKey);
-  if (cached) {
+  if (cached && !AUTO_LOAD_ALL_PAGES) {
     records = cached.records.slice();
     totalIncompleteRecords = records.length;
     fetchedRecords = records.length;
+    logFetch?.(`[VPO] Cache hit for "${cacheKey}": ${records.length} jobs`);
     isFetching = false;
     hideLoadingOverlay();
     hideColumnsIfFiltered();
@@ -343,46 +378,57 @@ async function fetchRecordsFiltered(fieldTech = 'all', branch = 'all') {
   }
 
   try {
-    // Build filterByFormula
-    const formulaParts = ['NOT({Field Tech Confirmed Job Complete})'];
+    // Build filterByFormula for this view
+    const parts = ['NOT({Field Tech Confirmed Job Complete})'];
     if (fieldTech && fieldTech !== 'all') {
-      formulaParts.push(`SEARCH("${escapeFormulaValue(fieldTech)}", {static Field Technician})`);
+      parts.push(`SEARCH("${escapeFormulaValue(fieldTech)}", {static Field Technician})`);
     }
     if (branch && branch !== 'all') {
-      formulaParts.push(`{static Vanir Office} = "${escapeFormulaValue(branch)}"`);
+      parts.push(`{static Vanir Office} = "${escapeFormulaValue(branch)}"`);
     }
-    const filterByFormula = formulaParts.length > 1 ? `AND(${formulaParts.join(',')})` : formulaParts[0];
+    lastFilterFormula = parts.length > 1 ? `AND(${parts.join(',')})` : parts[0];
+    logFetch?.(`[VPO] Initial fetch with filter: ${lastFilterFormula}`);
 
-    let _offset = '';
-    do {
-      const params = {
-        filterByFormula,
-        view: airtableViewId,
-        pageSize: 100,
-        fields: fieldsToFetch,
-        offset: _offset
-      };
+    // --- fetch first page ---
+    const { page, offset } = await fetchPageWithOffset(lastFilterFormula, '');
+    records = page;
+    fetchedRecords = page.length;
+    totalIncompleteRecords = records.length;
+    nextOffset = offset;
 
-      const res = await axios.get(airtableEndpoint, { params, signal: makeSignal() });
-      const page = (res.data.records || [])
-        .filter(r => !r.fields['Field Tech Confirmed Job Complete'])
-        .map(r => ({ id: r.id, fields: r.fields, descriptionOfWork: r.fields['Description of Work'] || '' }));
+    logFetch?.(`[VPO] Initial load total: ${records.length} jobs${nextOffset ? ' (more available)' : ' (no more pages)'}`);
+    scheduleRenderChunk(true);
+    setCountBadge(records.length);
 
-      records = records.concat(page);
-      fetchedRecords += page.length;
-      totalIncompleteRecords = records.length;
-      _offset = res.data.offset || '';
+    // --- auto-load remaining pages, if enabled ---
+    if (AUTO_LOAD_ALL_PAGES) {
+      let loops = 0;
+      while (nextOffset) {
+        const { page: more, offset: nxt } = await fetchPageWithOffset(lastFilterFormula, nextOffset);
+        records = records.concat(more);
+        fetchedRecords += more.length;
+        totalIncompleteRecords = records.length;
+        nextOffset = nxt;
 
-      // Incrementally render as we fetch
-      scheduleRenderChunk(renderCursor === 0);
-    } while (_offset);
+        // Render newly added rows without clearing
+        scheduleRenderChunk(false);
+        setCountBadge(records.length);
 
-    // Cache final set
-    cacheSet(cacheKey, { records: records.slice(), total: records.length });
+        logFetch?.(`[VPO] Auto-loaded page ${++loops}: +${more.length} (total ${records.length})${nextOffset ? ' (more available)' : ' (done)'}`);
+
+        // keep cache warm as we go so a reload picks up the larger set
+        cacheSet(cacheKey, { records: records.slice(), total: records.length });
+      }
+    } else {
+      // caching just the first page if not auto-loading
+      cacheSet(cacheKey, { records: records.slice(), total: records.length });
+    }
+
+    logFetch?.(`[VPO] Final total after initial load: ${records.length}`);
 
   } catch (error) {
     if (axios.isCancel?.(error) || error.name === 'CanceledError' || error.message === 'canceled') {
-      // Switched filters quickly; ignore
+      // filter changed mid-flight; ignore
     } else {
       console.error('❌ Error fetching records:', error);
       showToast('Error fetching records.');
@@ -394,6 +440,44 @@ async function fetchRecordsFiltered(fieldTech = 'all', branch = 'all') {
     setCountBadge(records.length);
   }
 }
+
+
+async function fetchNextPage() {
+  if (!nextOffset || isFetching) return;
+
+  try {
+    isFetching = true;
+    showLoadingOverlay();
+
+    const { page, offset } = await fetchPageWithOffset(lastFilterFormula, nextOffset);
+
+    // Append new rows and render more
+    records = records.concat(page);
+    fetchedRecords += page.length;
+    totalIncompleteRecords = records.length;
+    nextOffset = offset; // empty string means no more pages
+
+    // Totals log
+    logFetch(`[VPO] Loaded more: +${page.length} (total ${records.length})${nextOffset ? ' (more available)' : ' (no more pages)'}`);
+
+    // Continue rendering (no full reset)
+    scheduleRenderChunk(false);
+    setCountBadge(records.length);
+  } catch (error) {
+    if (axios.isCancel?.(error) || error.name === 'CanceledError' || error.message === 'canceled') {
+      // ignored
+    } else {
+      console.error('❌ Error fetching next page:', error);
+      showToast('Error loading more records.');
+    }
+  } finally {
+    isFetching = false;
+    hideLoadingOverlay();
+    hideColumnsIfFiltered();
+  }
+}
+
+
 
 // ==============================
 //  Rendering (Chunked + Filtered)
@@ -481,8 +565,18 @@ function renderTableFromRecords(fullReset = false) {
       warning.style.color = '#b45309';
       warning.style.margin = '1em 0';
       const searchBar = document.getElementById('searchBar');
+
+      // FIX: place warning *after* the search bar safely
       if (searchBar && searchBar.parentNode) {
-        searchBar.parentNode.insertBefore(warning, searchBar.parentNode.nextSibling);
+        // Insert after searchBar (reference must be child of parent)
+        searchBar.parentNode.insertBefore(warning, searchBar.nextSibling);
+        // Alternatively: searchBar.insertAdjacentElement('afterend', warning);
+      } else if (recordsContainer.parentNode) {
+        // Fallback: put above the table
+        recordsContainer.parentNode.insertBefore(warning, recordsContainer);
+      } else {
+        // Last resort: append to body
+        document.body.appendChild(warning);
       }
     }
     warning.textContent = isFetching
@@ -655,7 +749,7 @@ function wireModalUX(){
       submitUpdate(currentRecordId, true);
 
       const recordRow = document.querySelector(`input[data-record-id="${currentRecordId}"]`)?.closest("tr");
-const jobName = recordRow ? recordRow.querySelector(".col-job")?.textContent : `Record ${currentRecordId}`;
+      const jobName = recordRow ? recordRow.querySelector(".col-job")?.textContent : `Record ${currentRecordId}`;
       showToast(`✅ Completed: ${jobName}`);
 
       closeModal();
