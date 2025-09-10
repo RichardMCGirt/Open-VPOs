@@ -15,7 +15,7 @@
   --row-odd:#ffffff;      /* odd rows */
   --row-even:#7275798a;     /* even rows */
   --row-hover:#c7d2df;    /* hover */
-    --row-even-ink:#111827; /* near-black text for contrast */
+  --row-even-ink:#111827; /* near-black text for contrast */
 
 }
 
@@ -354,7 +354,7 @@ tbody tr:hover{           background: var(--row-hover); }
 }
 /* Base: use a variable for the checkbox border */
 .custom-checkbox .checkmark{
-  border: 2px solid var(--cb-border, var(--border));
+  border: 2px solid var(--cb-border, var(--border)); margin-inline:auto; 
 }
 
 /* Checked still uses the same variable unless you override it */
@@ -367,3 +367,45 @@ tbody tr:hover{           background: var(--row-hover); }
 tbody tr:nth-child(even){
   --cb-border: grey;
 }
+
+ /* Layout & accessibility niceties */
+    .table-container {
+                  border: 2px solid #000; /* black border around the table */
+
+    }
+    .table-wrapper {
+      overflow-x: auto;
+      outline: none; /* we’ll show a focus ring only when keyboard focusing */
+    }
+    .table-wrapper:focus-visible {
+      outline: 2px solid #3b82f6; /* accessible focus ring */
+      outline-offset: 2px;
+      border-radius: 6px;
+    }
+
+    /* Table base */
+    #records {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: auto;
+
+    }
+
+    /* Center everything in cells */
+    #records th,
+    #records td {
+      text-align: center;     /* horizontal centering */
+      vertical-align: middle; /* vertical centering */
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid #e5e7eb;
+      white-space: nowrap;    /* optional: keep single-line cells tidy */
+    }
+
+    /* Checkboxes: ensure perfect centering within the cell */
+   
+
+    /* Optional: nicer header look */
+    #records thead th {
+      font-weight: 600;
+      background: #f9fafb;
+    }
