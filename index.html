@@ -4,68 +4,89 @@
   <meta charset="UTF-8" />
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
   />
+  <meta name="theme-color" content="#24346c" />
   <title>VPO Awaiting Field Tech</title>
-  <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="favicon3.ico" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <br />
-  <h1>Open VPOs</h1>
+  <header class="app-header">
+    <h1>Open VPOs</h1>
+  </header>
 
-  <!-- Filters -->
-  <div class="filters" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
-    <input
-      type="text"
-      id="searchBar"
-      class="search-bar"
-      placeholder="Search jobs..."
-      aria-label="Search jobs"
-    />
-    <button id="searchButton" style="display:none; margin-top:10px;">Search</button>
+  <!-- Filters (sticky on mobile) -->
+  <section class="filters" role="region" aria-label="Filters">
+    <div class="filters-row">
+      <div class="search-wrap">
+        <label class="sr-only" for="searchBar">Search jobs</label>
+        <input
+          type="text"
+          id="searchBar"
+          class="search-bar"
+          placeholder="Search jobs…"
+          aria-label="Search jobs"
+          inputmode="search"
+          autocomplete="off"
+        />
+        <button id="clearSearch" class="btn btn-ghost" aria-label="Clear search" title="Clear search" hidden>✕</button>
+      </div>
 
-    <!-- Optional display of who is selected/logged in -->
-    <p id="displayName" style="display:none; margin:0;"></p>
+      <div class="select-wrap">
+        <label for="techDropdown">Technician</label>
+        <select id="techDropdown" aria-label="Filter by Technician">
+          <option value="all">Display All</option>
+        </select>
+      </div>
 
-    <!-- Technician dropdown (persists to localStorage as 'fieldTech') -->
-    <label for="techDropdown" style="font-weight:600;">Technician:</label>
-    <select id="techDropdown" aria-label="Filter by Technician">
-      <option value="all">Display All</option>
-    </select>
+      <div class="select-wrap">
+        <label for="branchDropdown">Branch</label>
+        <select id="branchDropdown" aria-label="Filter by Branch">
+          <option value="all">All Branches</option>
+        </select>
+      </div>
 
-    <!-- Branch dropdown (NEW) (persists to localStorage as 'branchFilter') -->
-    <label for="branchDropdown" style="font-weight:600;">Branch:</label>
-    <select id="branchDropdown" aria-label="Filter by Branch">
-      <option value="all">All Branches</option>
-    </select>
-  </div>
+      <button id="resetFilters" class="btn" title="Reset filters" aria-label="Reset filters">Reset</button>
+    </div>
+
+    <div class="filters-meta">
+      <p id="displayName" class="display-name" aria-live="polite"></p>
+      <span id="recordCount" class="count-pill" role="status" aria-live="polite"></span>
+    </div>
+  </section>
 
   <!-- Table -->
-  <div class="table-container">
-    <div class="table-wrapper">
-      <table id="records">
-        <tbody>
-          <!-- Table rows will be inserted here by FieldTechVPO.js -->
-        </tbody>
-      </table>
+  <main class="table-container" role="main">
+    <div class="table-wrapper" tabindex="0">
+      <table id="records" role="table" aria-label="Open VPO records"></table>
     </div>
-  </div>
+  </main>
 
   <!-- Loading overlay -->
-  <div id="loadingOverlay" style="display:none;">
-    <div class="loading-spinner"></div>
+  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true" aria-label="Loading">
+    <div class="loading-spinner" role="status" aria-live="polite"></div>
   </div>
 
   <!-- Toast -->
-  <div id="toast" class="toast"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <!-- Modal -->
-  <div class="modal-overlay" id="modalOverlay"></div>
-  <div id="modal" style="display:none;">
-    <p>Are you sure you want to confirm the job is complete?</p>
-    <button id="yesButton">Yes</button>
-    <button id="noButton">No</button>
+  <div class="modal-overlay" id="modalOverlay" aria-hidden="true"></div>
+  <div
+    id="modal"
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modalTitle"
+    aria-describedby="modalDesc"
+  >
+    <p id="modalTitle" class="modal-title">Confirm completion</p>
+    <p id="modalDesc" class="modal-desc">Are you sure you want to confirm the job is complete?</p>
+    <div class="modal-actions">
+      <button id="yesButton" class="btn btn-affirm">Yes</button>
+      <button id="noButton" class="btn btn-cancel">No</button>
+    </div>
   </div>
 
   <!-- Scripts -->
