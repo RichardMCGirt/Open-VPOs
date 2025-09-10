@@ -1,412 +1,369 @@
-/* General body styling */
-body {
-    font-family: Arial, sans-serif;
-    background-color: #d0d2d6;
-    display: flex;
-    flex-direction: column;
-    align-items: center; 
+:root{
+  --bg:#ffffff;
+  --surface:#f5f7fb;
+  --ink:#1f2937;
+  --muted:#6b7280;
+  --brand:#24346c;
+  --accent:#0ea5e9;
+  --ok:#16a34a;
+  --warn:#f59e0b;
+  --danger:#dc2626;
+  --border:#e5e7eb;
+  --shadow:0 8px 24px rgba(0,0,0,.08);
+  --radius:14px;
+  --table-bg:#ffffff;     /* table surface (distinct from page) */
+  --row-odd:#ffffff;      /* odd rows */
+  --row-even:#7275798a;     /* even rows */
+  --row-hover:#c7d2df;    /* hover */
+    --row-even-ink:#111827; /* near-black text for contrast */
 
-    height: 100vh; 
-    margin: 0;
-    color: #333;
-    overflow: hidden; 
 }
 
-/* Hide scrollbar for all browsers */
-.table-container, .table-wrapper {
-    overflow: auto; 
+*{ box-sizing:border-box; }
+html, body{ height:100%; max-width:100%; overflow-x:hidden; }
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  color:var(--ink);
+  background:var(--surface);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-height:100svh;
 }
 
-/* Hide scrollbar for Internet Explorer, Edge, and Firefox */
-.table-container, .table-wrapper {
-    -ms-overflow-style: none;  
-    scrollbar-width: none;     
+.app-header{
+  padding:12px 16px 4px;
+  display:flex;
+  justify-content:center; /* center h1 within header container */
+}
+h1{
+  margin:0;
+  font-size: clamp(20px, 3.8vw, 28px);
+  color: var(--brand);
+  letter-spacing: .2px;
+  display: grid;          /* enable centering */
+  place-items: center;    /* center horizontally & vertically */
+  text-align: center;     /* extra safety for multiline text */
 }
 
-.underline {
-    text-decoration: underline;
+.filters{
+  top: env(safe-area-inset-top, 0px);
+  z-index: 5;
+  background: var(--bg);
+  border:1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin: 8px 16px 10px;
+  padding: 10px;
+}
+.filters-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.filters-meta{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; }
+.display-name{ margin:0; font-weight:600; color:var(--muted); }
+
+.search-wrap{
+  display:flex; align-items:center; gap:6px;
+  flex: 0 1 clamp(140px, 28vw, 220px);
+  min-width: 140px;
 }
 
-/* Table container for responsiveness */
-.table-container {
-    width: 100%;                
-    max-width: 95vw;            
-    max-height: 90vh;           
-    overflow-x: auto;         
-    overflow-y: auto;           
-    margin: 5px auto;           
-    padding: 10px;
-    border-radius: 8px;
-    box-sizing: border-box;
-    position: relative;
+.search-bar{
+  flex: 0 1 clamp(140px, 28vw, 220px);
+  min-width: 140px;
+  padding:10px 10px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:#fff;
+  font-size:15px;
+  outline:none;
+  transition: border-color .15s ease, box-shadow .15s ease;
 }
 
-/* Wrapper around the table */
-.table-wrapper {
-    width: 100%;
-    height: 100%;
-    overflow-x: auto;
-    overflow-y: auto;
-    padding: 0; 
-        text-align: center;     
+@media (max-width:640px){
+  .search-wrap{ flex:0 1 150px; min-width:130px; }
+  .search-bar { flex:0 1 150px; min-width:130px; font-size:14px; padding:9px 10px; }
 }
 
-/* Table styling */
-table {
-        display: inline-table;   
-    margin: 0 auto;
+.search-bar:focus{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(14,165,233,.15); }
+#clearSearch[hidden]{ display:none; }
 
-    min-width: 600px; 
-    border: 2px solid #24346c;
+.select-wrap{ display:flex; gap:6px; align-items:center; }
+.select-wrap select{
+  padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:#fff; font-size:14px; min-width: 150px;
+}
+.select-wrap label{ font-weight:600; font-size:14px; }
+
+.btn{ padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:#fff; cursor:pointer; font-weight:600; }
+.btn:hover{ background:#f9fafb; }
+.btn-ghost{ border-color:transparent; background:#f3f4f6; }
+.btn-affirm{ background:#e8f9ee; border-color:#c3f0d2; color:#065f46; }
+.btn-cancel{ background:#fff5f5; border-color:#fde2e2; color:#7f1d1d; }
+
+.count-pill{
+  display:inline-block; padding:6px 10px; border-radius:999px; background:#eef2ff; color:#111827; font-weight:700; font-size:13px; min-height:28px;
 }
 
-th, td {
-    padding: 10px;
-    border: 1px solid #ddd;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 200px;
+/* --- Column hide helpers (robust across dynamic/chunked rendering) --- */
+#records.hide-branch th.col-branch, #records.hide-branch td.col-branch{ display:none; }
+#records.hide-tech   th.col-tech,   #records.hide-tech   td.col-tech  { display:none; }
+
+/* Collapse widths of hidden <col> so they don't reserve space */
+#records.hide-branch col.w-branch,
+#records.hide-tech   col.w-tech{
+  display:none;
+  width:0 !important;
 }
 
-th {
-    background-color: #24346c;
-    color: #fff;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    font-size: 22px;
-    padding: 5px;
-    font-weight: bold;
-    box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2);
+.table-container{ margin: 10px 16px 16px; }
+.table-wrapper{
+  overflow-x: auto;           /* keep this everywhere */
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  background: var(--table-bg); 
 }
 
-tr:nth-child(even) {
-    background-color: #ffffff; 
+
+#records{
+  min-width: 980px;           /* adjust to taste */
+  table-layout: fixed;        /* predictable column widths with colgroup */
 }
 
-tr:nth-child(odd) {
-    background-color: #f7f7f7; 
+#records .w-id        { width: 90px;  }
+#records .w-branch    { width: 140px; }
+#records .w-job       { width: 220px; }
+#records .w-desc      { width: 320px; } /* more room for description */
+#records .w-tech      { width: 160px; }
+#records .w-completed { width: 72px;  } /* stable tap target */
+
+#records td.col-job,
+#records td.col-desc{
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.35;
 }
 
-/* Portrait mode */
-@media screen and (orientation: portrait) {
-    .table-container {
-        max-height: 0vh; 
-        margin-bottom: 10px; 
-    }
-
-    table {
-        font-size: 14px; 
-    }
-    
-    th, td {
-        padding: 8px;
-        max-width: 150px;
-    }
+#records thead th{
+  white-space: nowrap;        /* headers stay on one line; user scrolls horizontally */
+  word-break: keep-all;
 }
 
-/* Landscape mode */
-@media screen and (orientation: landscape) {
-    .table-container {
-        margin-bottom: 30px; 
-    }
-
-    table {
-        font-size: 16px; 
-    }
-
-    th, td {
-        padding: 10px;
-        max-width: 200px;
-    }
+/* Desktop: inner scroll is fine */
+@media (min-width: 641px){
+  .table-wrapper{ overflow:auto; max-height:78vh; scrollbar-gutter: stable both-edges; }
 }
 
-/* Responsive design for different screen sizes */
-@media (max-width: 768px) {
-    .table-container {
-        width: 100%; 
-        max-width: 100vw; 
-        padding: 5px;
-    }
+/* Mobile: let the PAGE scroll (no inner scroller) */
+@media (max-width: 640px){
+  .filters{ padding:8px; }
+  .search-bar{ padding:10px; font-size:15px; }
+  .table-container{ margin: 8px 12px; }
+  .table-wrapper{ overflow:visible; max-height:none; }
+}
+  .table-wrapper{
+    overflow-x: auto;         /* was: overflow: visible; */
+    overflow-y: hidden;       /* keep vertical clean; page will scroll vertically */
+    max-height: none;
+  }
 
-    table {
-        font-size: 12px;
-        min-width: 100%; 
-    }
-    
-    th, td {
-        padding: 8px;
-        max-width: 150px;
-    }
+table{ width:100%; border-collapse:separate; border-spacing:0; 
+background: var(--table-bg);}
+thead th{
+  position: sticky; top: 0; background: var(--bg); z-index: 2;
+   background: var(--table-bg);
+  text-align:left; font-weight:700; font-size:14px; padding:10px 12px; border-bottom:1px solid var(--border);
+
+  /* keep headers readable — wrap only at spaces */
+  white-space: normal; overflow-wrap: normal; word-break: keep-all;
+}
+tbody td{
+  font-size:14px; padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:top;
+}
+tbody tr:nth-child(odd){ background: var(--row-odd); }
+tbody tr:hover{ background:#f6fbff; }
+td.completed-cell{ text-align:center; }
+
+/* Description/Job wrap vertically to avoid horizontal scroll */
+#records td.col-job, #records td.col-desc{
+  white-space: normal; overflow-wrap: anywhere; word-break: break-word; line-height:1.35; 
+}
+tbody tr:nth-child(even){ background: var(--row-even); }
+tbody tr:hover{           background: var(--row-hover); }
+/* Completed and ID stay compact */
+#records th.col-completed, #records td.col-completed{
+  width:1%; white-space:nowrap; text-align:center; padding-left:8px; padding-right:8px; background: var(--table-bg);
+}
+#records td.col-completed .custom-checkbox{ margin-inline:auto; }
+#records th.col-id, #records td.col-id{ width:1%; white-space:nowrap;  background: var(--table-bg);}
+
+/* Reasonable minimums so cells don’t collapse to tiny widths */
+#records th, #records td{ min-width:40px; }
+
+/* Optional col width hints (desktop-biased) */
+#records .w-id        { width: 7%; }
+#records .w-branch    { width: 18%; }
+#records .w-job       { width: 26%; }
+#records .w-desc      { width: 30%; }
+#records .w-tech      { width: 18%; }
+#records .w-completed { width: 6%; }
+
+/* Mobile column sizing strategy
+   - If BOTH Branch and Tech are visible, let browser auto-size (prevents “tall letters” headers)
+   - If either is hidden, use fixed layout with hints to keep things stable */
+@media (max-width: 640px){
+  #records{ width:100%; }
+  #records:not(.hide-branch):not(.hide-tech){ table-layout:auto; }
+  #records.hide-branch, #records.hide-tech  { table-layout:fixed; }
+
+  #records thead th, #records tbody td{ padding:10px 8px; font-size:13px; }
+  /* neutralize any min-width constraints on mobile */
+  #records thead th{ min-width:auto !important; }
+  
 }
 
-/* Very small screen sizes */
-@media (max-width: 480px) {
-    th, td {
-        font-size: 10px;
-        padding: 5px;
-    }
-    
-    table {
-        font-size: 10px;
-    }
-
-    .table-container {
-        width: 95%;
-        padding: 5px;
-        margin-top: 10px;
-        max-height: 45vh; 
-    }
+/* Checkbox styling */
+.custom-checkbox{ display:inline-flex; align-items:center; cursor:pointer; user-select:none; }
+.custom-checkbox input{ display:none; }
+.custom-checkbox .checkmark{
+  width:26px; height:26px; display:inline-block; border:2px solid var(--border);
+  border-radius:8px; position:relative; transition:.15s ease;
+}
+.custom-checkbox input:checked + .checkmark{ border-color:var(--ok); background:#e8f9ee; }
+.custom-checkbox input:checked + .checkmark::after{
+  content:""; position:absolute; left:8px; top:3px; width:7px; height:14px;
+  border:solid var(--ok); border-width:0 3px 3px 0; transform:rotate(45deg);
 }
 
-/* Modal styling */
-#modal {
-    display: none;
-    position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    background-color: white;
-    padding: 20px;
-    z-index: 1000;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    width: 300px;
-    text-align: center;
+/* Loading overlay */
+.loading-overlay{
+  position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.65); backdrop-filter: blur(2px); z-index: 9999;
 }
-
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 999;
-    display: none;
-}
-
-/* Modal responsiveness */
-@media (max-width: 768px) {
-    #modal {
-        width: 90%;
-        padding: 15px;
-    }
-
-    .modal-content {
-        width: 100%;
-    }
-
-    .modal button {
-        width: 100px;
-        font-size: 14px;
-    }
-}
-
-@media (max-width: 480px) {
-    #modal {
-        width: 80%;
-        padding: 10px;
-    }
-
-    .modal button {
-        width: 80px;
-        font-size: 12px;
-    }
-}
-.completed-cell {
-  cursor: pointer;
-}
-
-#loadingOverlay {
-  display: none;
-  position: fixed;
-  z-index: 2000;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(255,255,255,0.7);
-  justify-content: center;
-  align-items: center;
-}
-.loading-spinner {
-  border: 8px solid #f3f3f3;
-  border-top: 8px solid #003366; 
-  border-radius: 50%;
-  width: 64px;
-  height: 64px;
+.loading-spinner{
+  width:46px; height:46px; border:4px solid #e5e7eb; border-top-color:var(--accent); border-radius:50%;
   animation: spin 1s linear infinite;
 }
-@keyframes spin {
-  100% { transform: rotate(360deg);}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce){ .loading-spinner{ animation: none; } }
+
+/* Toast */
+.toast{
+  position:fixed; bottom:18px; right:18px; background:#111827; color:#fff;
+  padding:10px 14px; border-radius:10px; opacity:0; pointer-events:none; transform:translateY(8px);
+  transition:.2s ease; z-index:99999; max-width:80vw;
 }
+.toast.show{ opacity:1; transform:translateY(0) }
 
-/* Spinner styling */
-.spinner {
-    border: 8px solid #f3f3f3;
-    border-top: 8px solid #3498db;
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    animation: spin 1.5s linear infinite;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 9999;
+/* Modal */
+.modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; z-index:10000; }
+.modal{
+  position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+  background:var(--bg); border:1px solid var(--border); border-radius:14px; padding:18px 16px;
+  box-shadow: var(--shadow); z-index:10001; display:none; width:min(420px, 92vw);
 }
+.modal-title{ margin:0 0 6px; font-weight:700; }
+.modal-desc{ margin:0 0 14px; color:var(--muted); }
+.modal-actions{ display:flex; gap:8px; justify-content:flex-end; }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-@keyframes loading {
-    0% { width: 0%; }
-    100% { width: 100%; }
-}
-
-/* Input field styling */
-input[type="text"] {
-    padding: 10px;
-    font-size: 16px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    transition: all 0.3s ease-in-out;
-    width: 200px;
-    margin-bottom: 5px;
-    box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.1), 2px 2px 5px rgba(0, 0, 0, 0.15);
-}
-
-/* Button styling */
-button {
-    padding: 10px 20px;
-    background: linear-gradient(145deg, #2a4d9e, #24346c);
-    color: white;
-    border: none;
-    cursor: pointer;
-    border-radius: 5px;
-    font-size: 16px;
-    box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.2), -2px -2px 4px rgba(255, 255, 255, 0.5);
-    transition: all 0.3s ease-in-out;
-}
-
-@media (max-height: 950px) {
-    body {
-        font-family: Arial, sans-serif;
-        background-color: #d0d2d6;
-        display: flex;
-        flex-direction: column;
-        justify-content: center; 
-        align-items: center; 
-        height: 100vh; 
-        font-size: small;
-        margin: 0;
-        color: #333;
-        overflow: hidden; 
-    }
-
-    .custom-checkbox {
-        width: 15px;
-        height: 15px;
-    }
-
-    .custom-checkbox .checkmark {
-        width: 15px;
-        height: 15px;
-    }
-
-    th, td {
-    padding: 6px 10px;
-    text-align: center;
-    white-space: normal;   
-}
-
-    .table-container {
-        width: 100%; 
-        max-width: 98vw;
-        max-height: 99vh; 
-        height: 100%;
-        padding: 0px; 
-        border-radius: 4px;
-        box-sizing: border-box; 
-        position: relative;
-        overflow-x: none; 
-    }
-
-    table {
-        width: 98%; 
-        min-width: 95%; 
-        border: 2px solid #24346c;
-        max-height: 100%;
-    }
-
-    .table-wrapper {
-        width: 98%;
-        height: 100%;
-        overflow-x: auto;
-        overflow-y: auto;
-        padding: 0; 
-    }
-}
-
-/* Custom checkbox responsiveness */
-@media (max-width: 768px) {
-    .custom-checkbox {
-        width: 25px;
-        height: 25px;
-    }
-
-    .custom-checkbox .checkmark {
-        width: 25px;
-        height: 25px;
-    }
-}
-
-@media (max-width: 480px) {
-    .custom-checkbox {
-        width: 20px;
-        height: 20px;
-    }
-
-    .custom-checkbox .checkmark {
-        width: 20px;
-        height: 20px;
-    }
-}
-
-/* Transition for all buttons */
-button {
-    transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
-}
-.big-checkbox {
-  width: 60px !important;      /* base size */
-  height: 60px !important;     /* base size */
-  transform: scale(1.5);  /* ✅ makes it 1.5x bigger */
-  cursor: pointer;  /* better UX */
-  margin: 5px;
-}
-
-.toast {
-  visibility: hidden;
-  min-width: 250px;
-  margin-left: -125px;
-  background-color: #333;
-  color: #fff;
+/* Completed column pinned on the right while scrolling horizontally */
+#records th.col-completed,
+#records td.col-completed{
+  position: sticky;
+  right: 0;
+  background: var(--bg);
+  z-index: 3;
   text-align: center;
-  border-radius: 6px;
-  padding: 14px;
-  position: fixed;
-  left: 50%;
-  top: 20%;
-  z-index: 9999;
-  font-size: 16px;
-  opacity: 0;
-  transition: opacity 0.4s, top 0.4s;
+  white-space: nowrap;
+  min-width: 60px;
+}
+#records td.col-completed .custom-checkbox{ margin-inline:auto; }
+
+/* Optional: subtle divider shadow before the sticky "Completed" column */
+#records th.col-completed::before,
+#records td.col-completed::before{
+  content:"";
+  position:absolute;
+  left:-8px; top:0; bottom:0; width:8px;
+  box-shadow: inset 8px 0 8px -8px rgba(0,0,0,.08);
+  pointer-events:none;
 }
 
-.toast.show {
-  visibility: visible;
-  opacity: 1;
-  top: 30%;
+/* (Optional) Pin the ID column on the left so the job stays identifiable while scrolling */
+#records th.col-id,
+#records td.col-id{
+  left: 0;
+  background: var(--bg);
+  z-index: 2;
+  white-space: nowrap;
+}
+
+/* Collapse widths of hidden columns so they don't reserve space when filtered */
+#records.hide-branch col.w-branch,
+#records.hide-tech   col.w-tech{
+  display:none;
+  width:0 !important;
+}
+#records.hide-branch th.col-branch, #records.hide-branch td.col-branch,
+#records.hide-tech   th.col-tech,   #records.hide-tech   td.col-tech{ display:none; }
+
+td.completed-cell { padding: 0; }
+label.custom-checkbox{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:100%;
+  cursor:pointer;
+}
+.custom-checkbox input:checked + .checkmark{
+  border-color: var(--ok);
+  background:#e8f9ee;
+}
+/* Make the table surface distinct from the page */
+.table-wrapper, table, thead th { background: var(--table-bg); }
+
+/* Zebra rows */
+tbody tr:nth-child(odd){  background: var(--row-odd); }
+:root{
+  --row-even:#e5e7eb;   /* light gray even row */
+  --row-even-ink:#111827; /* near-black text for contrast */
+}
+
+tbody tr:nth-child(even){
+  background: var(--row-even);
+  color: var(--row-even-ink);
+}
+
+tbody tr:hover{           background: var(--row-hover); }
+
+/* ✅ Sticky header cells use table surface (not body) */
+#records thead th,
+#records th.col-id,
+#records th.col-completed{
+  background: var(--table-bg) !important;
+}
+
+/* ✅ Sticky TD cells inherit their row stripe color */
+#records td.col-id,
+#records td.col-completed{
+  background: inherit !important;
+}
+#records td.col-id,
+#records td.col-completed{
+  background: inherit !important;
+  color: inherit !important;
+}
+/* Base: use a variable for the checkbox border */
+.custom-checkbox .checkmark{
+  border: 2px solid var(--cb-border, var(--border));
+}
+
+/* Checked still uses the same variable unless you override it */
+.custom-checkbox input:checked + .checkmark{
+  border-color: var(--cb-border, var(--border));
+  background: #e8f9ee;
+}
+
+/* Even rows: set the variable to white */
+tbody tr:nth-child(even){
+  --cb-border: grey;
 }
